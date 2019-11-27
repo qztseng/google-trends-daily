@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[60]:
-
 
 from datetime import datetime, timedelta, date, time
 import pandas as pd
@@ -14,7 +12,7 @@ from pytrends.exceptions import ResponseError
 
 def _fetch_data(trendreq, kw_list, timeframe='today 3-m', cat=0, geo='', gprop='') -> pd.DataFrame:
     
-    """Attempts to fecth data and retries in case of a ResponseError."""
+    """Download google trends data using pytrends TrendReq and retries in case of a ResponseError."""
     attempts, fetched = 0, False
     while not fetched:
         try:
@@ -35,6 +33,33 @@ def get_daily_trend(trendreq, keyword:str, start:str, end:str, cat=0,
                     geo='', gprop='', delta=269, overlap=100, sleep=0, 
                     tz=0, verbose=False) ->pd.DataFrame:
 
+    """Stich and scale consecutive daily trends data between start and end date.
+    This function will first download piece-wise google trends data and then 
+    scale each piece using the overlapped period. 
+
+        Parameters
+        ----------
+        trendreq : TrendReq
+            a pytrends TrendReq object
+        keyword: str
+            currently only support single keyword, without bracket
+        start: str
+            starting date in string format:YYYY-MM-DD (e.g.2017-02-19)
+        end: str
+            ending date in string format:YYYY-MM-DD (e.g.2017-02-19)
+        cat, geo, gprop, sleep: 
+            same as defined in pytrends
+        delta: int
+            The length(days) of each timeframe fragment for fetching google trends data, 
+            need to be <269 in order to obtain daily data.
+        overlap: int
+            The length(days) of the overlap period used for scaling/normalization
+        tz: int
+            The timezone shift in minute relative to the UTC+0 (google trends default).
+            For example, correcting for UTC+8 is 480, and UTC-6 is -360 
+
+    """
+    
     start_d = datetime.strptime(start, '%Y-%m-%d')
     init_end_d = end_d = datetime.strptime(end, '%Y-%m-%d')
     init_end_d.replace(hour=23, minute=59, second=59)    
@@ -118,80 +143,5 @@ def get_daily_trend(trendreq, keyword:str, start:str, end:str, cat=0,
     df[keyword] = (100*df[keyword]/df[keyword].max()).round(decimals=0)
     
     return df
-
-
-# In[75]:
-
-
-# pytrend = TrendReq(hl='en-US')
-# keyword = 'iphone'
-# start = '20170101'
-# end = '20191121'
-# geo='US'
-# cat=0
-# gprop='froogle'
-
-
-# In[76]:
-
-
-# overlapping = get_daily_trend(pytrend, keyword, start, end, geo=geo, cat=cat, gprop=gprop, verbose=True, tz=-360)
-
-
-# In[77]:
-
-
-# import matplotlib.dates as mdates
-# import matplotlib.pyplot as plt
-# plt.style.use('seaborn-darkgrid')
-
-
-# overlapping.index = [pd.to_datetime(date, format='%Y-%m-%d').date() for date in overlapping.index]
-
-# ax = overlapping.plot(figsize=(15,10))
-# # set monthly locator
-# ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-# # set formatter
-# ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-# # set font and rotation for date tick labels
-# plt.gcf().autofmt_xdate()
-
-# plt.show()
-
-
-# In[78]:
-
-
-# import plotly.express as px
-# import plotly.graph_objects as go
-# period_m = pd.melt(overlapping.reset_index(), id_vars='index')
-
-# fig = px.line(period_m, x='index', y='value', color='variable')
-# fig.update_layout(xaxis = dict(
-#                     tickmode = 'linear',
-#                     tick0 = '2017-07-02',  # start on sunday
-#                     dtick = (7*86400000.0) # tick spaced for every 7 days
-#                 )
-#                 )
-# fig.show()
-
-# # xaxis = {
-# #    'tickformat': '%Y-%m-%d',
-# #    'tickmode': 'auto',
-# #    'nticks': value, [where value is the max # of ticks]
-# #    'tick0': value, [where value is the first tick]
-# #    'dtick': value [where value is the step between ticks]
-# # }
-
-
-# In[70]:
-
-
-# date(2018,9,21).weekday()
-
-
-# In[ ]:
-
-
 
 
